@@ -1,0 +1,845 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 29 13:14:20 2024
+
+@author: rodrigo
+"""
+
+#import sys
+#sys.path.insert(0, '/home/rodrigo/Descargas/URJC/URJC_23_24/TFG_Aero/pyASTERIX/pyASTERIX/')
+
+import pandas as pd
+import jsonpickle
+import pickle
+import csv
+import json
+from pymongo import MongoClient
+from dataclasses import dataclass, asdict, fields
+from typing import List, Any, Dict, IO
+import sqlite3
+import logging
+import datetime
+from tqdm import tqdm
+import codecs
+import subprocess
+import os
+
+
+import pyasterix.classesASTERIX.classcategory21 as classcategory21
+import pyasterix.classesASTERIX.classcategory48 as classcategory48
+import pyasterix.classesASTERIX.classmodes as classmodes
+
+
+
+##############################################################################
+# Set error log configuration 
+
+################################
+###  [0] Log configuration  ####
+################################
+
+def set_log(filename: str = 'errors.log'):
+    
+    try:
+        # Log format configuration
+        log_format = "%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s"
+        logging.basicConfig(filename=filename, format=log_format, level=logging.INFO)
+        
+        # Get the logger object
+        #logger = logging.getLogger(__name__)
+        
+        # Configure date and time format
+        date_format = "%Y-%m-%d %H:%M:%S"
+        
+        # Set up custom formatter to include date and time
+        formatter = logging.Formatter(fmt=log_format, datefmt=date_format)
+        for handler in logging.root.handlers:
+            handler.setFormatter(formatter)
+        
+        #print(f'\nLog set correctly: {filename}\n')
+            
+    except Exception as e:
+        print(f"\nError setting log file: {e}\n")
+
+
+
+##############################################################################
+# Convert .ast file to hexadecimal format (Optional: Dump to txt file).
+
+###################################
+###  [1] .ast Data extraction  ####
+###################################
+
+def ast_to_hex(filename: str, message_list: [], save_file: bool = False):
+    
+    #count = 0
+    try:
+        with open(filename, 'rb') as file1:
+            value = " "
+            while True:
+                message = ""
+                cat = file1.read(1).hex().upper()
+                if not cat:
+                    break
+                
+                len_message = file1.read(2).hex().upper()
+                message = cat + len_message
+                len_message_int = int(len_message,16)
+                
+                for i in range(len_message_int-3):
+                    value = file1.read(1).hex()
+                    message += value.upper()
+    
+                #print(message)
+                message_list.append(message)
+                #count += 1
+                #print("CONTROL 2:  |{}|".format(count))
+                
+                #Code to control number of messages to convert
+                #if count > 100:
+                #    break
+        print('\nFile converted correctly!\n')
+            
+    except FileNotFoundError:
+        print(f"\nFile {filename} not found.\n")
+        
+    except Exception as e:
+        print(f"\nError reading the file: {e}\n")
+        
+    #i = 0 
+    if save_file:
+        try:
+            file_save = f'{filename[:-4]}_HEX.txt'
+            print(file_save)
+            with open(file_save, 'w') as file2:
+                for line in message_list:
+                    file2.write(line + '\n')
+                    
+                    #Code to control number of messages to store
+                    #i += 1
+                    #if i > 5000:
+                    #    break
+            print(f'\nSaved on {file_save}\n')
+        except Exception as e:
+            print(f"\nError reading the file: {e}\n")
+
+
+##############################################################################
+# Split huge files into equal lines number files
+
+
+def split_file(input_file, prefix, number_lines = 0, path = os.getcwd()):
+    try:
+        if number_lines != 0:
+            before_split = set(os.listdir(path))
+            
+            subprocess.run(["split", "-l", str(number_lines), input_file, f'{path}{prefix}_', "--numeric-suffixes"])
+            
+            after_split = set(os.listdir(path))
+            
+            new_files = after_split - before_split
+            print(f"new files: {new_files}\n")
+            
+            for i in range(0, len(new_files)): 
+                old_name = f"{path}{prefix}_{i:02}"
+                new_name = f"{path}{prefix}_{i:02}.txt"
+                try:
+                    os.rename(old_name, new_name)
+                except FileNotFoundError:
+                    break
+        else:
+            print("\nNumber lines equal 0, not splitted\n")
+
+    except Exception as e:
+        print(f"\nError splitting file: {e}\n")
+
+
+
+##############################################################################
+# Decode one message and return items values (object).
+
+#####################################
+###  [2] Decode ASTERIX message  ####
+#####################################
+
+def decode_message(message: str):
+    try:
+        message_asterix = None
+        cat, length, count_octets = get_catlen(message)
+        #print("CAT: {} | LEN: {}".format(cat, length))
+    
+        if cat == 21:
+            message_asterix = classcategory21.AsterixMessage(cat, length, message, count_octets)
+            message_asterix.add_blocks()
+            
+        elif cat == 48:
+            message_asterix = classcategory48.AsterixMessage(cat, length, message, count_octets)
+            message_asterix.add_blocks()
+            
+        else:
+            print(f"\nCAT{cat} not implemented yet\n")
+            return None
+        
+        print("\nMessage decoded!")
+        return message_asterix
+    
+    except Exception as e:
+        print(f"\nError decoding message: {e}\n")
+
+
+##############################################################################
+# Get ASTERIX category and length of a message.
+
+def get_catlen(line):
+    base = 16
+    catlen_format = [1,2]
+    message = []
+    count_item = 0
+    count_octets = 0
+    catlen_format = [1,2]
+    while count_item < 2:
+        message.append(line[count_octets*2:count_octets*2+catlen_format[count_item]*2])
+        count_octets += catlen_format[count_item]
+        count_item += 1
+    
+    asterix_cat = int(message[0], base)
+    asterix_len = int(message[1], base)
+    count_octets = count_item + 1
+    return asterix_cat, asterix_len, count_octets
+
+
+
+##############################################################################
+# Decode file with messages and return items values (object).
+
+####################################################
+###  [3.1] Decode ASTERIX messages list (file)  ####
+####################################################
+
+def decode_file(filename: str, cat: int):
+    
+    messages_asterix = None
+    if cat == 21:
+        messages_asterix = classcategory21.Category21()
+    elif cat == 48:
+        messages_asterix = classcategory48.Category48()
+    else:
+        print(f"\nError: CAT{cat} not implemented yet\n")
+        return None
+    
+    try:
+        with open(filename, 'r') as file1:
+            
+            total_lines = sum(1 for line in file1)
+            file1.seek(0)
+
+            num_line = 0
+            for line in tqdm(file1, total=total_lines, desc="Progress", 
+                             unit=" messages"):
+        
+                asterix_cat, asterix_len, count_octets = get_catlen(line)
+                info = line
+                if asterix_cat == cat:
+                    try:
+                        messages_asterix.add_message(
+                            asterix_cat, asterix_len, info, count_octets, num_line
+                        )
+                        #print("Valid CAT and Len")
+                    except ValueError as e:
+                        print(f"Error: {e}")
+                        logging.error(f'Message decoded with error: {line}\n')
+                        logging.error(f'Error: {e}\n')
+                
+                    messages_asterix.add_count()
+                    num_line += 1
+                else:
+                    #print("Error: CAT and message not compatible")
+                    logging.error(f'Message not decoded: {line}\n')
+                    #break   
+                
+        print("\n\nMessages decoded!\n")   
+        
+        return messages_asterix
+            
+    except FileNotFoundError:
+        print(f"\nFile {filename} not found.\n")
+        
+    except Exception as e:
+        print(f"\nError reading the file: {e}\n")
+    
+    
+    
+##############################################################################
+# Decode file with messages on hex and dump results to json file without saving 
+# it as variable
+
+################################################################
+###  [3.2] Decode ASTERIX messages list (file) to json file  ###
+################################################################
+
+def decode_file_to_json (input_file: str, output_file: str):
+
+    try:
+        with open(input_file, 'r') as file1:
+            
+            with codecs.open(output_file, 'w', encoding='utf-8') as file2:
+            
+                total_lines = sum(1 for line in file1)
+                file1.seek(0)
+        
+                file2.write('[')
+                for line in tqdm(file1, total=total_lines, desc="Progress", unit=" messages"):
+                    message = decode_message(line)
+                    
+                    if message is not None:
+                        dump_message_to_json(file2, message)
+                    
+                file2.seek(-2, 1)
+                file2.write('\n]')
+                
+        print("\nMessages decoded!")   
+        print(f'\nDumped object to: {output_file}\n')     
+            
+    except FileNotFoundError:
+        print("\nFile not found.")
+        
+    except Exception as e:
+        print(f"\nError reading the file: {e}\n")
+
+
+
+##############################################################################
+# Decode file with messages on hex and dump results to csv file without saving 
+# it as variable
+
+###############################################################
+###  [3.3] Decode ASTERIX messages list (file) to csv file  ###
+###############################################################
+
+def decode_file_to_csv(input_file: str, output_file: str):
+
+    try:         
+        j = 0
+        data_dict = {}
+        first_mess = True
+        with open(input_file, 'r') as file1:
+            
+            with open(output_file, 'w', newline='') as file2:
+                
+                csv_writer = csv.writer(file2)
+                
+                total_lines = sum(1 for line in file1)
+                file1.seek(0)
+        
+                for line in tqdm(file1, total=total_lines, desc="Progress", 
+                                 unit=" messages"):
+                    
+                    message_aux = decode_message(line)
+                    
+                    if message_aux is not None:
+                       
+                        for j in range(len(message_aux.blocks)):
+                            
+                            message = message_aux.blocks[j]
+                            attribute_items = list(message.__dict__.keys())
+                            
+                            for item in attribute_items[1:]:
+                                value = getattr(message, item)
+                                if value.exist: 
+                                    data_dict[item] = asdict(value)
+                                else:
+                                    data_dict[item] = None
+                                    
+                        json_object = json.dumps(data_dict, indent=8)
+                        json_content = json.loads(json_object)
+                        if first_mess:
+                            csv_writer.writerow(json_content.keys())
+                            first_mess = False
+                    
+                        csv_writer.writerow(json_content.values())
+                        data_dict = {}
+        print("\nMessages decoded!")   
+        print(f'\nDumped object to: {output_file}\n')     
+
+            
+    except FileNotFoundError:
+        print("\nFile not found.")
+        
+    except Exception as e:
+        print(f"\nError reading the file: {e}\n")
+
+
+
+##############################################################################
+# Dump "messages_asterix" variable results to csv file
+
+############################################################
+###  [3.4] Dump ASTERIX messages list (var) to csv file  ###
+############################################################
+
+def var_to_csv(csv_file: str, messages_list: Any):
+    
+    try:
+        j = 0
+        data_dict = {}
+        first_mess = True
+            
+        with open(csv_file, 'w', newline='') as file1:
+                
+            csv_writer = csv.writer(file1)
+                
+            total_lines = messages_list.count
+        
+            for message_aux in tqdm(messages_list.messages, total=total_lines, 
+                             desc="Progress", unit=" messages"):
+        
+                for j in range(len(message_aux.blocks)):
+                            
+                    message = message_aux.blocks[j]
+                    attribute_items = list(message.__dict__.keys())
+                    
+                    for item in attribute_items[1:]:
+                        value = getattr(message, item)
+                        if value.exist: 
+                            data_dict[item] = asdict(value)
+                        else:
+                            data_dict[item] = None
+                            
+                json_object = json.dumps(data_dict, indent=8)
+                json_content = json.loads(json_object)
+                if first_mess:
+                    csv_writer.writerow(json_content.keys())
+                    first_mess = False
+            
+                csv_writer.writerow(json_content.values())
+                data_dict = {}
+        print("\nMessages decoded!\n")   
+        print(f'\nDumped object to: {csv_file}\n')   
+    
+    except FileNotFoundError:
+        print("\nFile not found.\n")
+        
+    except Exception as e:
+        print(f"\nError writing CSV file: {e}\n")
+    
+
+
+##############################################################################
+# Dump object message (transformed to dict) to JSON file 
+# Note: separated in two def to be able to add only ONE message on one call
+#       (for memory optimization purpose [RAM]).
+
+############################################
+#####  [4.1] Dump one message to JSON  #####
+############################################
+
+def dump_message_to_json(file: IO, message_blocks: Any):
+    
+    data_dict = {}
+    #end_block = False
+    j = 0
+    for j in range(len(message_blocks.blocks)):
+        message = message_blocks.blocks[j]
+        attribute_items = list(message.__dict__.keys())
+        # Iterar sobre los atributos en el orden de declaración
+        for item in attribute_items[1:]:
+            value = getattr(message, item)
+            if value.exist: 
+                data_dict[item] = asdict(value)
+            else:
+                data_dict[item] = None
+        #json_object = jsonpickle.encode(data_dict, indent=8)
+        json_object = json.dumps(data_dict, indent=8)
+        file.write(json_object)
+        file.write(',\n')
+        data_dict = {}
+
+
+def dump_all_to_json(filename: str, messages_list: Any):
+    
+    #end_block = False
+    #i = 0
+    try:
+        with codecs.open(filename, 'w', encoding='utf-8') as file1:
+            file1.write('[\n')
+            
+            total_lines = messages_list.count
+            for i in tqdm(range(messages_list.count), total=total_lines, 
+                          desc="Progress", unit=" messages"):
+            #for i in range(messages_list.count):
+                dump_message_to_json(file1, messages_list.messages[i])
+                
+            file1.seek(-2, 1)
+            file1.write('\n]')
+            
+        print(f'\nDumped object to: {filename}\n')
+        
+    except Exception as e:
+        print(f"\nError dumping into the file: {e}\n")
+        
+        
+
+##############################################################################
+# Dump object with all messages (transformed to dict) to JSON file
+# Note: to be use directly on asterix object with more that one message decoded.
+
+####################################
+#####  [4.2] Dump all to JSON  #####
+####################################
+
+def dump_all_to_json_bk(filename: str, messages_list: Any):
+
+    data_dict = {}
+    i, j = 0, 0
+    try:
+        with codecs.open(filename, 'w', encoding='utf-8') as file1:
+            
+            total_lines = messages_list.count
+            file1.write('[')
+            for i in tqdm(range(messages_list.count), total=total_lines, 
+                          desc="Progress", unit=" messages"):
+            #for i in range(messages_list.count):
+                for j in range(len(messages_list.messages[i].blocks)):
+                    
+                    print
+                    message = messages_list.messages[i].blocks[j]
+                    attribute_items = list(message.__dict__.keys())
+                    for item in attribute_items[1:]:
+                        value = getattr(message, item)
+                        if value.exist:  
+                            data_dict[item] = asdict(value)
+                            #data_dict[item] = recursive_asdict(value)
+                        else:
+                            data_dict[item] = None
+                    #json_object = jsonpickle.encode(data_dict, indent=8)
+                    json_object = json.dumps(data_dict, indent=8)
+                    file1.write(json_object)
+                    file1.write(',\n')
+                    data_dict = {}
+                    
+            file1.seek(-2, 1)
+            file1.write('\n]')
+            #file1.write(']')
+        
+        print(f'\nDumped object to: {filename}\n')
+        
+    except Exception as e:
+        print(f"\nError dumping into the file: {e}\n")
+
+
+
+##############################################################################
+# Dump complex object into JSON file with "jsonpickle" package.
+# Note: it can be useful since all the properties and information of 
+#       the object can be saved for later load and study.
+# IMPORTANT: Usage NOT recommended for variables with more than 10000 elements
+
+##################################
+### [5.1] Dump to JSONPICKLE  ####
+##################################
+
+def dump_to_jsonpickle(filename: str, messages_list: Any):
+    try:
+        with open(filename, 'w', encoding='utf-8') as file:
+            json_object = jsonpickle.encode(messages_list, indent=8)
+            file.write(json_object)
+        print(f'\nDumped object to: {filename}\n')
+        
+    except Exception as e:
+        print(f"\nError dumping into the file: {e}\n")
+
+
+########################################
+### [5.2] Recovery from JSONPICKLE  ####
+########################################
+
+def load_from_jsonpickle(filename: str):
+    try:
+        with open(filename, 'rb') as file:
+            json_serialized = file.read()
+            loaded_object = jsonpickle.loads(json_serialized)
+        print('\nLoaded!')
+        return loaded_object
+    
+    except Exception as e:
+        print(f"\nError dumping into the file: {e}\n")
+
+
+
+##############################################################################
+# Dump to CSV from JSON file (use JSON from "dump_all_to_json", NOT from jsonpickle)
+
+#######################
+#####  [6] CSV  #######
+#######################
+
+def dump_to_csv(json_filename: str, csv_filename: str):
+    try:
+        
+        with open(json_filename, 'r') as file1:
+            json_content = json.load(file1)
+        
+        with open(csv_filename, 'w', newline='') as file2:
+            # Creat CSV writer object
+            csv_writer = csv.writer(file2)
+            
+            # Write CSV header (based on JSON dict keys)
+            csv_writer.writerow(json_content[0].keys())
+            
+            for mess in json_content:
+                # Write data on a row
+                csv_writer.writerow(mess.values())
+        
+        print(f"Dumped object to: {csv_filename}\n")
+        
+    except Exception as e:
+        print(f"Error dumping into the file: {e}\n")
+
+
+
+##############################################################################
+# Dump all messages (one by one) converted to dict to a MongoDB database
+
+# Start mongo on terminal -->> sudo systemctl start mongod
+# Check if it is running correctly -->> sudo systemctl status mongod
+# Restart -->> sudo systemctl restart mongod
+# Stop -->> sudo systemctl stop mongod
+
+###########################
+#####  [7] MongoDB  #######
+###########################
+
+def dump_to_mongodb(messages_list: Any, config_file: str = "mongodb.conf"):
+    
+    try:
+        with open(config_file, 'r') as file1:
+            #lines = file1.readlines()
+            lines = [line.rstrip('\n') for line in file1.readlines()]
+            
+        # Connect to MongoDB database (it is compulsory to have one mongod server)
+        client = MongoClient(lines[0])
+        db = client[lines[1]]
+        coleccion = db[lines[2]]
+           
+        data_dict = {}
+        #data_dict_aux= {}
+        i, j = 0, 0
+        
+        for i in range(messages_list.count):
+            for j in range(len(messages_list.messages[i].blocks)):
+                message = messages_list.messages[i].blocks[j]
+                attribute_items = list(message.__dict__.keys())
+                
+                for item in attribute_items[1:]:
+                    value = getattr(message, item)
+                    #print("Valor actual:", valor_actual)
+                    if value.exist: 
+                        #data_dict_aux[item] = asdict(value)  
+                        data_dict[item] = asdict(value)
+                    else:
+                        data_dict[item] = None
+                #data_dict[str(i)] = data_dict_aux
+                #data_dict_aux = {}
+                
+                coleccion.insert_one(data_dict)
+                data_dict = {}
+        #db.dropDatabase()
+        client.close()
+        
+        print(f"Dumped data to MongoDB database: {lines[1]}\n")
+        
+    except Exception as e:
+        print(f"Error dumping into MongoDB: {e}\n")
+      
+        
+              
+##############################################################################       
+# Dump to database (SQLite)       
+        
+###########################
+##### [8] SQLite DB #######
+###########################
+
+def dump_to_sqlite(filename: str, messages_list: Any):
+    
+    try:
+        # Create/connect to SQLite database
+        conexion = sqlite3.connect(filename)
+        
+        # Create table
+        cursor = conexion.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS dictionary_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data TEXT
+            )
+        ''')
+        
+        data_dict = {}
+        i, j = 0, 0
+        
+        for i in range(messages_list.count):
+            for j in range(len(messages_list.messages[i].blocks)):
+                message = messages_list.messages[i].blocks[j]  
+                data_dict = asdict(message)
+                
+                # Convert dict to json
+                data = json.dumps(data_dict)
+                
+                # Insert json into database
+                cursor.execute('INSERT INTO dictionary_data (data) VALUES (?)', (data,))
+        
+                data_dict = {}
+        
+        # Save and close connection
+        conexion.commit()
+        conexion.close()  
+        
+        print(f"Dumped data to SQLite database: {filename}\n")
+        
+    except Exception as e:
+        print(f"Error dumping into SQLite database: {e}\n")    
+        
+        
+                
+##############################################################################       
+# Save one message (all its blocks) into human format on a variable      
+        
+###################################
+##### [9] Message to string #######
+###################################
+
+def message_str(message: Any):
+    
+    try:
+        str_info = ('********************************************\n'
+                    '*******   Decoded ASTERIX Message:   *******\n'
+                    '********************************************\n\n'
+                    f'{message.info}\n' 
+                    '********************************************\n\n')
+        #for block in message.blocks:
+        for index, block in enumerate(message.blocks): 
+            str_info += f'  Block {index}:\n--------------\n\n'
+            attribute_items = list(block.__dict__.keys())
+            # Iterar sobre los atributos en el orden de declaración
+            for item in attribute_items[1:]:
+                value = getattr(block, item)
+                #print("Valor actual:", valor_actual)
+                if value.exist: 
+                    str_info += str(value) + "\n"
+                else:
+                    str_info += f'{item.capitalize()}: None\n\n'
+            str_info += "\n--------------------------------------------\n"
+            
+        return str_info
+    
+        print("Message saved correctly\n")
+        
+    except Exception as e:
+        print(f"Error saving message: {e}\n")    
+
+
+
+##############################################################################       
+# Dump choosen items of message into txt file (CAT21)
+
+######################################
+#####  [10] CAT21 Items to TXT  ######
+######################################
+ 
+def dump_items_txt(filename: str, messages_list: Any, items_to_save: []):
+    
+    try:
+        data_dict = {}
+        values = []
+        i, j = 0, 0
+        with open(filename, "w") as file1:
+            #for item in items_to_save:
+            #    file1.write(item + "   ")
+            #file1.write("\n")
+            
+            message = messages_list.messages[i].blocks[j]
+            data = ({attr: getattr(message, attr) for 
+                    attr in items_to_save})
+
+            header = ""
+            header_keys = []
+            for key, value in data.items():
+                dictionary = asdict(value)
+                header_keys += list(dictionary.keys())
+            header = '\t'.join(header_keys)
+            file1.write(header + "\n")
+            
+            for i in range(len(messages_list.messages)):
+                for j in range(len(messages_list.messages[i].blocks)):
+                    message = messages_list.messages[i].blocks[j]
+                    data = ({attr: getattr(message, attr) for 
+                            attr in items_to_save})
+
+                    for item in items_to_save:
+                        if data[item].exist:
+                            #print(asdict(datos_a_guardar[item]))
+                            data_dict = asdict(data[item])
+                            for value in data_dict.values():
+                                values.append(str(value))
+                        else:
+                            data_dict = asdict(data[item])
+                            for value in data_dict.values():
+                                values.append(str(None))
+                    values_str = '\t'.join(values)
+                    file1.write(values_str + "\n")
+                    
+                    data_dict, values, values_str = {}, [], ""
+                    
+        print("Data dumped to txt!\n")
+
+    except Exception as e:
+        print(f"Error dumping to txt: {e}\n")    
+
+
+
+##############################################################################       
+# Dump choosen items of message (only hex BDS)  into txt file (CAT48)
+
+#####################################
+#####  [11] CAT48 BDS to TXT   ######
+#####################################
+
+def dump_bds_txt(filename: str, messages_list: Any):
+    
+    try:
+        
+        classmodes.bds_to_file(filename, messages_list)     
+            
+    except Exception as e:
+        print(f"Error dumping to txt: {e}\n")  
+
+
+
+##############################################################################
+# Dump BDS category into txt file (CAT48)
+
+###################################
+#####  [12] TXT BDS Category  #####
+###################################
+ 
+def dump_bds_cat_txt(input_file: str, output_file: str, bds_type: str):
+
+    try:
+    
+       classmodes.print_in_file(input_file, output_file, bds_type)
+
+    except Exception as e:
+        print(f"Error dumping to txt: {e}\n")  
+
+
+
+##############################################################################
+
+
+
+
+
+
+
