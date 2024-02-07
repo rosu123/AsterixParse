@@ -103,11 +103,11 @@ messages_asterix = ast.decode_file(input_file, category)
 
 
 ####
-# From file directly decoded to json
+# From file directly decoded to JSON
 #
 
 ##############################################################
-###  [3.2] Decode ASTERIX messages list file to json file  ###
+###  [3.2] Decode ASTERIX messages list file to JSON file  ###
 ##############################################################
 
 import pyasterix as ast
@@ -290,7 +290,7 @@ import pandas as pd
 
 input_file = 'ADSB_HEX_items.txt'
 
-datos3 = pd.read_csv(input_file, delimiter='\t', engine='python')
+data = pd.read_csv(input_file, delimiter='\t', engine='python')
 
 
 
@@ -318,7 +318,7 @@ import pandas as pd
 
 input_file = 'MODO_S_HEX_items.txt'
 
-datos3 = pd.read_csv(input_file, delimiter='\t', engine='python')
+data = pd.read_csv(input_file, delimiter='\t', engine='python')
 
 
 
@@ -348,7 +348,7 @@ import pandas as pd
 
 input_file = 'MODO_S_HEX_items_BDS50.txt'
 
-datos3 = pd.read_csv(input_file, delimiter='\t', engine='python')
+data = pd.read_csv(input_file, delimiter='\t', engine='python')
 
 
 

@@ -6,25 +6,19 @@ Created on Mon Jan 29 13:14:20 2024
 @author: rodrigo
 """
 
-#import sys
-#sys.path.insert(0, '/home/rodrigo/Descargas/URJC/URJC_23_24/TFG_Aero/pyASTERIX/pyASTERIX/')
-
-import pandas as pd
-import jsonpickle
-import pickle
 import csv
 import json
-from pymongo import MongoClient
-from dataclasses import dataclass, asdict, fields
-from typing import List, Any, Dict, IO
 import sqlite3
 import logging
-import datetime
-from tqdm import tqdm
 import codecs
 import subprocess
 import os
 
+from dataclasses import asdict
+from typing import Any, IO
+import jsonpickle
+from pymongo import MongoClient
+from tqdm import tqdm
 
 import pyasterix.classesASTERIX.classcategory21 as classcategory21
 import pyasterix.classesASTERIX.classcategory48 as classcategory48
@@ -40,7 +34,16 @@ import pyasterix.classesASTERIX.classmodes as classmodes
 ################################
 
 def set_log(filename: str = 'errors.log'):
-    
+    """
+    Set error log configuration. It is by default al INFO level. It will
+    store the message that has not been able to decode, preceded by de date.
+        
+    Parameters
+    ----------
+    filename : str (optional)
+        Name of the file to save the errors. Default = 'errors.log'
+              
+    """
     try:
         # Log format configuration
         log_format = "%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s"
@@ -72,7 +75,21 @@ def set_log(filename: str = 'errors.log'):
 ###################################
 
 def ast_to_hex(filename: str, message_list: [], save_file: bool = False):
+    """
+    Convert .ast file (binary) to hexadecimal format txt file. If optional "save_file" 
+    parameter is set to TRUE, data is saved on file (same name as origin with "_HEX.txt" 
+    at the end).
+        
+    Parameters
+    ----------
+    filename : str
+        Name of the file to save hexadecimal messages.
+    message_list : list 
+        List of the hexadecimal messages.
+    save_file : bool (optional)
+        Save on file if True. Default = False
     
+    """
     #count = 0
     try:
         with open(filename, 'rb') as file1:
@@ -128,8 +145,27 @@ def ast_to_hex(filename: str, message_list: [], save_file: bool = False):
 ##############################################################################
 # Split huge files into equal lines number files
 
-
 def split_file(input_file, prefix, number_lines = 0, path = os.getcwd()):
+    """
+    Split huge files into equal lines number files. Useful for large amounts of
+    data to be analysed at the same time.
+    created files shall have as their name the name entered in the prefix, followed 
+    by a number starting with zero and increasing successively as the following files 
+    are generated.
+    Recommendation: DO NOT decode files larger than 250,000 lines.
+        
+    Parameters
+    ----------
+    input_file : str
+        Name of the file to read hexadecimal messages. 
+    prefix : str 
+        Prefix name of generated files.
+    number_lines : int  (optional)
+        Number of lines per file. Default = 0 (not splitted)
+    path : str (optional)
+        Path where the generated files will be saved. Default = cwd
+    
+    """
     try:
         if number_lines != 0:
             before_split = set(os.listdir(path))
@@ -164,6 +200,21 @@ def split_file(input_file, prefix, number_lines = 0, path = os.getcwd()):
 #####################################
 
 def decode_message(message: str):
+    """
+    Decode one message in string type from hexadecimal. 
+        
+    Parameters
+    ----------
+    message : str
+        String containing de ASTERIX message on hexadecimal format. 
+        
+    Returns
+    -------
+    message_asterix : AsterixMessage object
+        ASTERIX messages object. Its content and fields depend on the message 
+        category.
+    
+    """
     try:
         message_asterix = None
         cat, length, count_octets = get_catlen(message)
@@ -192,6 +243,24 @@ def decode_message(message: str):
 # Get ASTERIX category and length of a message.
 
 def get_catlen(line):
+    """
+    Gets the category and length of a message. 
+        
+    Parameters
+    ----------
+    line : str
+        String containing de ASTERIX message on hexadecimal format. 
+        
+    Returns
+    -------
+    asterix_cat : int
+        ASTERIX message category.
+    asterix_len : int
+        ASTERIX message length.
+    count_octets : int
+        Number of hexadecimal octets read.
+    
+    """
     base = 16
     catlen_format = [1,2]
     message = []
@@ -218,7 +287,23 @@ def get_catlen(line):
 ####################################################
 
 def decode_file(filename: str, cat: int):
+    """
+    Decode file with messages and return items values (object). Decoded into variable
+    object type Category21 or Category48 (more categories will be added as they are developed).
+        
+    Parameters
+    ----------
+    filename : str
+        Name of the file to read hexadecimal messages. 
+    cat : int
+        Category to be decoded.
+        
+    Returns
+    -------
+    messages_asterix : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.      
     
+    """
     messages_asterix = None
     if cat == 21:
         messages_asterix = classcategory21.Category21()
@@ -271,15 +356,26 @@ def decode_file(filename: str, cat: int):
     
     
 ##############################################################################
-# Decode file with messages on hex and dump results to json file without saving 
+# Decode file with messages on hex and dump results to JSON file without saving 
 # it as variable
 
 ################################################################
-###  [3.2] Decode ASTERIX messages list (file) to json file  ###
+###  [3.2] Decode ASTERIX messages list (file) to JSON file  ###
 ################################################################
 
 def decode_file_to_json (input_file: str, output_file: str):
-
+    """
+    Decode file with messages and dump results to JSON file without saving 
+    it as variable.
+        
+    Parameters
+    ----------
+    input_file : str
+        Name of the file to read hexadecimal messages. 
+    output_file : str
+        Name of JSON file to dump decoded messages. 
+        
+    """
     try:
         with open(input_file, 'r') as file1:
             
@@ -318,7 +414,18 @@ def decode_file_to_json (input_file: str, output_file: str):
 ###############################################################
 
 def decode_file_to_csv(input_file: str, output_file: str):
-
+    """
+    Decode file with messages and dump results to csv file without saving 
+    it as variable.
+        
+    Parameters
+    ----------
+    input_file : str
+        Name of the file to read hexadecimal messages. 
+    output_file : str
+        Name of csv file to dump decoded messages. 
+        
+    """
     try:         
         j = 0
         data_dict = {}
@@ -379,7 +486,17 @@ def decode_file_to_csv(input_file: str, output_file: str):
 ############################################################
 
 def var_to_csv(csv_file: str, messages_list: Any):
-    
+    """
+    Dump decoded CategoryXX object to csv file. (XX = category)
+        
+    Parameters
+    ----------
+    csv_file : str
+        Name of csv file to dump decoded messages. 
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     try:
         j = 0
         data_dict = {}
@@ -435,7 +552,18 @@ def var_to_csv(csv_file: str, messages_list: Any):
 ############################################
 
 def dump_message_to_json(file: IO, message_blocks: Any):
-    
+    """
+    Dump decoded MessageAsterix object to JSON file.
+    Reminder: Each message can have more than one data block.
+        
+    Parameters
+    ----------
+    file : IO
+        File descriptor of output JSON file.
+    message_blocks : MessageAsterix object
+        ASTERIX decoded message object. Its content depends on the category.
+        
+    """
     data_dict = {}
     #end_block = False
     j = 0
@@ -457,7 +585,17 @@ def dump_message_to_json(file: IO, message_blocks: Any):
 
 
 def dump_all_to_json(filename: str, messages_list: Any):
-    
+    """
+    Dump decoded CategoryXX object to JSON file.
+        
+    Parameters
+    ----------
+    filename : str
+        Name of JSON file to dump decoded messages. 
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     #end_block = False
     #i = 0
     try:
@@ -489,7 +627,19 @@ def dump_all_to_json(filename: str, messages_list: Any):
 ####################################
 
 def dump_all_to_json_bk(filename: str, messages_list: Any):
-
+    """
+    Dump decoded CategoryXX object to JSON file. (Funcionality same as dump_all_to_json;
+    internally, the difference is that the former calls the dump process individually
+    for each decoded message).
+        
+    Parameters
+    ----------
+    filename : str
+        Name of JSON file to dump decoded messages. 
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     data_dict = {}
     i, j = 0, 0
     try:
@@ -540,6 +690,21 @@ def dump_all_to_json_bk(filename: str, messages_list: Any):
 ##################################
 
 def dump_to_jsonpickle(filename: str, messages_list: Any):
+    """
+    Dump complex object into JSON file with "jsonpickle" package.
+    Note: it can be useful since all the properties and information of 
+    the object can be saved for later load and study.
+    
+    IMPORTANT: Usage NOT recommended for variables with more than 10000 elements
+        
+    Parameters
+    ----------
+    filename : str
+        Name of JSON file to dump decoded messages. 
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     try:
         with open(filename, 'w', encoding='utf-8') as file:
             json_object = jsonpickle.encode(messages_list, indent=8)
@@ -555,6 +720,22 @@ def dump_to_jsonpickle(filename: str, messages_list: Any):
 ########################################
 
 def load_from_jsonpickle(filename: str):
+    """
+    Load complex object from JSON file with "jsonpickle" package.
+    Note: it can be useful since all the properties and information of 
+    the object can be saved for later load and study.
+        
+    Parameters
+    ----------
+    filename : str
+        Name of JSON file from which the object is to be loaded
+              
+    Returns
+    -------
+    loaded_object : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.  
+        
+    """
     try:
         with open(filename, 'rb') as file:
             json_serialized = file.read()
@@ -575,8 +756,19 @@ def load_from_jsonpickle(filename: str):
 #######################
 
 def dump_to_csv(json_filename: str, csv_filename: str):
-    try:
+    """
+    Dump to csv from JSON file (use JSON generated with dump_all_to_json(), NOT 
+    from dump_to_jsonpickle()).
         
+    Parameters
+    ----------
+    json_filename : str
+        Name of JSON file to read decoded messages. 
+    csv_filename : str
+        Name of csv file to dump decoded messages. 
+        
+    """
+    try:
         with open(json_filename, 'r') as file1:
             json_content = json.load(file1)
         
@@ -611,7 +803,18 @@ def dump_to_csv(json_filename: str, csv_filename: str):
 ###########################
 
 def dump_to_mongodb(messages_list: Any, config_file: str = "mongodb.conf"):
+    """
+    Dump all messages (one by one) converted to dict to a MongoDB database
+    (server with mongod required).
     
+    Parameters
+    ----------
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+    config_file : str (optional)
+        File with configuration MongoDB configuration settings. Default = "mongodb.conf"
+        
+    """
     try:
         with open(config_file, 'r') as file1:
             #lines = file1.readlines()
@@ -662,7 +865,17 @@ def dump_to_mongodb(messages_list: Any, config_file: str = "mongodb.conf"):
 ###########################
 
 def dump_to_sqlite(filename: str, messages_list: Any):
+    """
+    Dump all messages (one by one) converted to dict to a SQlite database
     
+    Parameters
+    ----------
+    filename : str 
+       Database name to dump ASTERIX messages.
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     try:
         # Create/connect to SQLite database
         conexion = sqlite3.connect(filename)
@@ -711,7 +924,15 @@ def dump_to_sqlite(filename: str, messages_list: Any):
 ###################################
 
 def message_str(message: Any):
+    """
+    Save one message data into human format on a variable.
     
+    Parameters
+    ----------
+    message : str
+        AsterixMessage decoded object. 
+        
+    """
     try:
         str_info = ('********************************************\n'
                     '*******   Decoded ASTERIX Message:   *******\n'
@@ -749,7 +970,19 @@ def message_str(message: Any):
 ######################################
  
 def dump_items_txt(filename: str, messages_list: Any, items_to_save: []):
+    """
+    Dump choosen items of messages into txt file (designed for category 21)
     
+    Parameters
+    ----------
+    filename : str 
+       Name of file to dump decoded messages.
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+    items_to_save : list
+        List with names of items to save
+        
+    """
     try:
         data_dict = {}
         values = []
@@ -807,7 +1040,18 @@ def dump_items_txt(filename: str, messages_list: Any, items_to_save: []):
 #####################################
 
 def dump_bds_txt(filename: str, messages_list: Any):
+    """
+    Dump choosen items of message (only hex BDS) into txt file (designed for 
+    category 48)
     
+    Parameters
+    ----------
+    filename : str 
+       Name of file to dump decoded messages.
+    messages_list : CategoryXX object (XX = category)
+        ASTERIX decoded messages list object. Its content depends on the category.
+        
+    """
     try:
         
         classmodes.bds_to_file(filename, messages_list)     
@@ -825,7 +1069,19 @@ def dump_bds_txt(filename: str, messages_list: Any):
 ###################################
  
 def dump_bds_cat_txt(input_file: str, output_file: str, bds_type: str):
-
+    """
+    Dump BDS category (Item250) decoded into txt file (designed for category 48)
+    
+    Parameters
+    ----------
+    input_file : str
+        Name of the file to read BDS hex data (generated with dump_bds_txt()).
+    output_file : str
+        Name of file to dump decoded messages.
+    bds_type : str
+        BDS type to decode
+        
+    """
     try:
     
        classmodes.print_in_file(input_file, output_file, bds_type)
