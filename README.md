@@ -84,10 +84,12 @@ ast.dump_to_sqlite(output_file, decoded_messages)       # Dump to SQLite databas
 #### Experimental: 
 
 ```bash
-ast.message_str(decoded_message)                                    # Save one message into human format on a variable  
-ast.dump_items_txt(output_file, decoded_messages, items_to_save)    # Dump choosen items of message into txt file (CAT21)
-ast.dump_bds_txt(output_file, decoded_messages)                     # Dump choosen items of message (only hex BDS) into txt file (CAT48)
-ast.dump_bds_cat_txt(input_file, output_file, bds_type)             # Dump BDS category decoded data into txt file (from txt gen. w/ ast.dump_bds_txt())
+ast.message_str(decoded_message)                                      # Save one message into human format on a variable  
+ast.dump_items_txt(output_file, decoded_messages, items_to_save)      # Dump choosen items of message into txt file (CAT21)
+ast.dump_bds_txt(output_file, decoded_messages)                       # Dump choosen items of message (only hex BDS) into txt file (CAT48)
+ast.dump_bds_cat_txt(input_file, output_file, bds_type)               # Dump BDS category decoded data into txt file (from txt gen. w/ ast.dump_bds_txt())
+ast.merge_data(fileCAT21, fileBDS50, fileBDS60, output_file, max_dev) # Merge on csv file CAT21 items with BDS50 and BDS60 decoded data
+ast.calculate_meteo(input_file, output_file, local_meteo_grid)        # Calculate dataframe with ASTERIX and ERA5 meteo data
 ```
 > **_NOTE:_** This are experimental functions and its behavior may change in future. Useful for further study of certain message data.
 

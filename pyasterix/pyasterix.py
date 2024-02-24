@@ -23,6 +23,7 @@ from tqdm import tqdm
 import pyasterix.classesASTERIX.classcategory21 as classcategory21
 import pyasterix.classesASTERIX.classcategory48 as classcategory48
 import pyasterix.classesASTERIX.classmodes as classmodes
+import pyasterix.classesASTERIX.meteotool as meteotool
 
 
 
@@ -335,6 +336,8 @@ def decode_file(filename: str, cat: int):
                         print(f"Error: {e}")
                         logging.error(f'Message decoded with error: {line}\n')
                         logging.error(f'Error: {e}\n')
+                    except TypeError as e:
+                        print(f"\nMessage error: {line} | Error: {e}\n")
                 
                     messages_asterix.add_count()
                     num_line += 1
@@ -871,7 +874,7 @@ def dump_to_sqlite(filename: str, messages_list: Any):
     Parameters
     ----------
     filename : str 
-       Database name to dump ASTERIX messages.
+        Database name to dump ASTERIX messages.
     messages_list : CategoryXX object (XX = category)
         ASTERIX decoded messages list object. Its content depends on the category.
         
@@ -976,7 +979,7 @@ def dump_items_txt(filename: str, messages_list: Any, items_to_save: []):
     Parameters
     ----------
     filename : str 
-       Name of file to dump decoded messages.
+        Name of file to dump decoded messages.
     messages_list : CategoryXX object (XX = category)
         ASTERIX decoded messages list object. Its content depends on the category.
     items_to_save : list
@@ -1047,7 +1050,7 @@ def dump_bds_txt(filename: str, messages_list: Any):
     Parameters
     ----------
     filename : str 
-       Name of file to dump decoded messages.
+        Name of file to dump decoded messages.
     messages_list : CategoryXX object (XX = category)
         ASTERIX decoded messages list object. Its content depends on the category.
         
@@ -1092,10 +1095,73 @@ def dump_bds_cat_txt(input_file: str, output_file: str, bds_type: str):
 
 
 ##############################################################################
+# Merge on csv file CAT21 items with BDS50 and BDS60 decoded data, given a 
+# max. deviation based on time (s)
+
+####################################################
+#####  [13] Merge items CAT21 and BDS50 BDS60  #####
+####################################################
+
+def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float = 5):
+    """
+    Merge on csv file CAT21 items with BDS50 and BDS60 decoded data, given a 
+    max. deviation based on time (s). It is recommended to set max. deviation
+    to values > 3s to obtain better results (Recommended: 5 seconds). More than 
+    30 seconds can lead to erroneous data.
+    
+    Parameters
+    ----------
+    fileCAT21 : str
+        Name of file with CAT21 items (generated with dump_items_txt()).
+    fileBDS50 : str
+        Name of file with BDS50 items (generated with dump_bds_cat_txt()).
+    fileBDS60 : str
+        Name of file with BDS50 items (generated with dump_bds_cat_txt()).
+    max_dev : float (optional)
+        Max. deviation to merge data depending on timestamp of data (5s recommended)
+        
+    """
+    try:
+    
+       meteotool.merge_data(fileCAT21, fileBDS50, fileBDS60, output_file, max_dev)
+
+    except Exception as e:
+        print(f"Error merging data: {e}")  
 
 
 
+###############################################################################
+# Calculate dataframe with ASTERIX and ERA5 meteo data (temperature and 
+# wind velocity)
 
+########################################
+#####  [14] Calculate meteo index  #####
+########################################
 
+def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
+    """
+    Calculate dataframe with ASTERIX and ERA5 meteo data (temperature and 
+    wind velocity). It creates a dataframe with temperature and wind velocity 
+    calculated with de CAT21 and BDS data, merged with the same ERA5 data obtained
+    with "fastmeteo package" querying to official page 
+    (https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
+    
+    Parameters
+    ----------
+    input_file : str
+        Name of file with all meteo data (generated with merge_data()).
+    output_file : str
+        Name of file to save data.
+    local_meteo_grid : str
+        Local grid to store ERA5 data (Note: Be careful, it uses a lot of space,
+                                       Example: 5GB for Spain 24h data)
+        
+    """
+    try:
+    
+       meteotool.calculate_meteo(input_file, output_file, local_meteo_grid)
+
+    except Exception as e:
+        print(f"Error calculating meteo data: {e}")  
 
 

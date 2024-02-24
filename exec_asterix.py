@@ -238,7 +238,7 @@ ast.dump_to_mongodb(messages_asterix)
 ##### [8] SQLite DB #######
 ###########################
 
-import pyasterix
+import pyasterix as ast
 
 
 output_file = 'ADSB_21.db'
@@ -329,7 +329,6 @@ data = pd.read_csv(input_file, delimiter='\t', engine='python')
 #####  [12] TXT BDS Category  #####
 ###################################
  
-
 import pyasterix as ast
 
 
@@ -350,5 +349,45 @@ input_file = 'MODO_S_HEX_items_BDS50.txt'
 
 data = pd.read_csv(input_file, delimiter='\t', engine='python')
 
+
+
+#%%###########################################################################
+# Merge on csv file CAT21 items with BDS50 and BDS60 decoded data, given a 
+# max. deviation based on time (s)
+
+####################################################
+#####  [13] Merge items CAT21 and BDS50 BDS60  #####
+####################################################
+
+import pyasterix as ast
+
+
+fileCAT21 = 'ADSB_HEX_items.txt'
+fileBDS50 = 'MODO_S_HEX_items_BDS50.txt'
+fileBDS60 = 'MODO_S_HEX_items_BDS60.txt'
+
+output_file = 'merge_items.csv'
+max_dev = 5
+
+ast.merge_data(fileCAT21, fileBDS50, fileBDS60, output_file, max_dev)
+
+
+
+#%%###########################################################################
+# Calculate dataframe with ASTERIX and ERA5 meteo data (temperature and 
+# wind velocity)
+
+########################################
+#####  [14] Calculate meteo index  #####
+########################################
+
+import pyasterix as ast
+
+
+input_file = 'merge_items.csv'
+output_file = 'meteo_info.csv'
+local_meteo_grid = 'gridinfo/meteo/era5-zarr'
+
+ast.calculate_meteo(input_file, output_file, local_meteo_grid)
 
 
