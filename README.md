@@ -1,4 +1,4 @@
-# pyASTERIX
+# AsterixParse
 
 [eurocontrol]: https://www.eurocontrol.int/asterix
 
