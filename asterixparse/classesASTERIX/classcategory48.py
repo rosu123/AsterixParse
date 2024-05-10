@@ -13,7 +13,7 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta
 
-from pyasterix.classesASTERIX import classmodes
+from classesASTERIX import classmodes
 
 
 ######################################################

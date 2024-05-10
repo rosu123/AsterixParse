@@ -20,10 +20,10 @@ import jsonpickle
 from pymongo import MongoClient
 from tqdm import tqdm
 
-import pyasterix.classesASTERIX.classcategory21 as classcategory21
-import pyasterix.classesASTERIX.classcategory48 as classcategory48
-import pyasterix.classesASTERIX.classmodes as classmodes
-import pyasterix.classesASTERIX.meteotool as meteotool
+import classesASTERIX.classcategory21 as classcategory21
+import classesASTERIX.classcategory48 as classcategory48
+import classesASTERIX.classmodes as classmodes
+import classesASTERIX.meteotool as meteotool
 
 
 
@@ -48,7 +48,7 @@ def set_log(filename: str = 'errors.log'):
     try:
         # Log format configuration
         log_format = "%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s"
-        logging.basicConfig(filename=filename, format=log_format, level=logging.INFO)
+        logging.basicConfig(filename=filename, format=log_format, level=logging.ERROR)
         
         # Get the logger object
         #logger = logging.getLogger(__name__)
@@ -200,7 +200,7 @@ def split_file(input_file, prefix, number_lines = 0, path = os.getcwd()):
 ###  [2] Decode ASTERIX message  ####
 #####################################
 
-def decode_message(message: str):
+def decode_message(message: str, verbose: bool = True):
     """
     Decode one message in string type from hexadecimal. 
         
@@ -208,6 +208,8 @@ def decode_message(message: str):
     ----------
     message : str
         String containing de ASTERIX message on hexadecimal format. 
+    verbose : bool
+        Print decode success/failure
         
     Returns
     -------
@@ -230,10 +232,14 @@ def decode_message(message: str):
             message_asterix.add_blocks()
             
         else:
-            print(f"\nCAT{cat} not implemented yet\n")
+            if verbose:
+                print(f"\nCAT{cat} not implemented yet\n")
+                
             return None
         
-        print("\nMessage decoded!")
+        if verbose:
+            print("\nMessage decoded!")
+            
         return message_asterix
     
     except Exception as e:
@@ -389,7 +395,7 @@ def decode_file_to_json (input_file: str, output_file: str):
         
                 file2.write('[')
                 for line in tqdm(file1, total=total_lines, desc="Progress", unit=" messages"):
-                    message = decode_message(line)
+                    message = decode_message(line, verbose = False)
                     
                     if message is not None:
                         dump_message_to_json(file2, message)
@@ -445,7 +451,7 @@ def decode_file_to_csv(input_file: str, output_file: str):
                 for line in tqdm(file1, total=total_lines, desc="Progress", 
                                  unit=" messages"):
                     
-                    message_aux = decode_message(line)
+                    message_aux = decode_message(line, verbose = False)
                     
                     if message_aux is not None:
                        

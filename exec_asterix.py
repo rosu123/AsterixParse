@@ -27,7 +27,7 @@ Created on Wed Jan 10 19:49:31 2024
 ###  [0] Error log configuration  ####
 ######################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 ast.set_log()
 
@@ -41,21 +41,21 @@ ast.set_log()
 ### [1] .ast Data extraction ####
 #################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
-sample_filename = 'ADSB.ast'
+sample_filename = 'ADSB_HEX.ast'
 message_list = []
 save_file = True
 
 ast.ast_to_hex(sample_filename, message_list, save_file)
 
 
-####
+#%%###
 # Split huge files into equal lines number files
 #
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_HEX.txt'
@@ -74,7 +74,7 @@ ast.split_file(input_file, prefix, number_lines, path)
 ###  [2] Decode ASTERIX message  ####
 #####################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 message = ('150063F71B7B6BD3A70414D70101000D95011CFAA6FDAE330E7D5334FED7199A342' +
@@ -93,7 +93,7 @@ message_asterix = ast.decode_message(message)
 ###  [3.1] Decode ASTERIX messages (file)  ####
 ###############################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_HEX.txt' #CAT21
@@ -102,7 +102,7 @@ category = 21
 messages_asterix = ast.decode_file(input_file, category)
 
 
-####
+#%%###
 # From file directly decoded to JSON
 #
 
@@ -110,7 +110,7 @@ messages_asterix = ast.decode_file(input_file, category)
 ###  [3.2] Decode ASTERIX messages list file to JSON file  ###
 ##############################################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_HEX.txt'
@@ -119,7 +119,7 @@ output_file = 'ADSB_21.json'
 ast.decode_file_to_json(input_file, output_file)
 
 
-####
+#%%###
 # From file directly decoded to csv
 #
 
@@ -127,7 +127,7 @@ ast.decode_file_to_json(input_file, output_file)
 ###  [3.3] Decode ASTERIX messages list (file) to csv file  ###
 ###############################################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_HEX.txt'
@@ -136,7 +136,7 @@ output_file = 'ADSB_21.csv'
 ast.decode_file_to_csv(input_file, output_file)
 
 
-####
+#%%###
 # From variable to csv
 #
 
@@ -144,7 +144,7 @@ ast.decode_file_to_csv(input_file, output_file)
 ###  [3.4] Dump ASTERIX messages list (var) to csv file  ###
 ############################################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'ADSB_21.csv'
@@ -160,13 +160,13 @@ ast.var_to_csv(output_file, messages_asterix)
 #####  [4] Dump all to JSON  #####
 ##################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'ADSB_21.json'
 
 ast.dump_all_to_json(output_file, messages_asterix)
-#pyasterix.dump_all_to_json_bk(file1, messages_asterix)
+#asterixparse.dump_all_to_json_bk(file1, messages_asterix)
 
 
 
@@ -177,7 +177,7 @@ ast.dump_all_to_json(output_file, messages_asterix)
 ###  [5] Dump and load JSONPICKLE  ####
 ########################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'ADSB_21.json'
@@ -185,11 +185,11 @@ output_file = 'ADSB_21.json'
 ast.dump_to_jsonpickle(output_file, messages_asterix)
 
 
-####
+#%%###
 # Load object
 #
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_21.json'
@@ -207,7 +207,7 @@ messages_asterix_2 = ast.load_from_jsonpickle(input_file)
 #####   [6] CSV   #####
 #######################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'ADSB_21.json'
@@ -224,7 +224,7 @@ ast.dump_to_csv(input_file, output_file)
 #####  [7] MongoDB  ######
 ##########################
 
-import pyasterix as ast
+import asterixparse as ast
  
 
 ast.dump_to_mongodb(messages_asterix)
@@ -238,7 +238,7 @@ ast.dump_to_mongodb(messages_asterix)
 ##### [8] SQLite DB #######
 ###########################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'ADSB_21.db'
@@ -255,7 +255,7 @@ ast.dump_to_sqlite(output_file, messages_asterix)
 ##### [9] Message to string #######
 ###################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 info_message = ast.message_str(messages_asterix.messages[0]) #First message of the list
@@ -271,7 +271,7 @@ print(info_message)
 #####  [10] CAT21 Items to TXT  ######
 ######################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'ADSB_HEX_items.txt'
@@ -281,7 +281,7 @@ items_to_save = ["item080", "item131", "item140", "item073",
 ast.dump_items_txt(output_file, messages_asterix, items_to_save)
     
 
-####
+#%%###
 # Read de CSV to check if it has been dumped correctly
 #
 
@@ -301,7 +301,7 @@ data = pd.read_csv(input_file, delimiter='\t', engine='python')
 #####  [11] CAT48 BDS to TXT  ######
 ####################################
  
-import pyasterix as ast
+import asterixparse as ast
 
 
 output_file = 'MODO_S_HEX_items.txt'
@@ -309,7 +309,7 @@ output_file = 'MODO_S_HEX_items.txt'
 ast.dump_bds_txt(output_file, messages_asterix)
 
 
-####
+#%%###
 # Read de CSV to check if it has been dumped correctly
 #
 
@@ -323,13 +323,13 @@ data = pd.read_csv(input_file, delimiter='\t', engine='python')
 
 
 #%%###########################################################################
-# Dump BDS category decoded into txt file (CAT48)
+# Dump BDS category decoded into txt file (CAT48 - BDS44, BDS50 or BDS60)
 
 ###################################
 #####  [12] TXT BDS Category  #####
 ###################################
  
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'MODO_S_HEX_items.txt'
@@ -338,7 +338,8 @@ bds_type = 'BDS50'
 
 ast.dump_bds_cat_txt(input_file, output_file, bds_type)
 
-####
+
+#%%###
 # Read de CSV to check if it has been dumped correctly
 #
 
@@ -359,7 +360,7 @@ data = pd.read_csv(input_file, delimiter='\t', engine='python')
 #####  [13] Merge items CAT21 and BDS50 BDS60  #####
 ####################################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 fileCAT21 = 'ADSB_HEX_items.txt'
@@ -381,7 +382,7 @@ ast.merge_data(fileCAT21, fileBDS50, fileBDS60, output_file, max_dev)
 #####  [14] Calculate meteo index  #####
 ########################################
 
-import pyasterix as ast
+import asterixparse as ast
 
 
 input_file = 'merge_items.csv'

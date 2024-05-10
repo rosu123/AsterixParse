@@ -6,7 +6,7 @@ Created on Mon Feb  5 17:26:37 2024
 @author: rodrigo
 """
 
-"""pyASTERIX module setup"""
+"""AsterixParse module setup"""
 
 
 import json
@@ -99,7 +99,7 @@ def read(file_name=None, is_encoding=True, ignore_raises=False):
 
 
 setup(
-    name='pyasterix',
+    name='asterixparse',
     version=VERSION,
     description='Python project to Decode EUROCONTROL ASTERIX data format messages',
     long_description=long_description,
@@ -123,10 +123,10 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3 :: Only',
     ],
-    keywords=['pyASTERIX', 'ASTERIX', 'EUROCONTROL','development', 'ModeS', 
-              'BDS', 'Category21', 'Category48', 'ADB-S'],
+    keywords=['AsterixParse', 'ASTERIX', 'EUROCONTROL','development', 'ModeS', 
+              'BDS', 'Category21', 'Category48', 'ADS-B'],
     
-    #package_dir={"": "pyASTERIX"},
+    #package_dir={"": "AsterixParse"},
     packages=find_packages(),
     python_requires=">=3.6, <4",
     #project_urls={

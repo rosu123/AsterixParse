@@ -6,6 +6,6 @@ Created on Mon Feb  5 13:56:42 2024
 @author: rodrigo
 """
 
-from .pyasterix import *
+from .asterixparse import *
 
-pyasterix.set_log()
+asterixparse.set_log()

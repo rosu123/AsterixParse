@@ -206,7 +206,7 @@ def time_format(time):
 #####  Merge items CAT21 and BDS50 BDS60  #####
 ###############################################
 
-
+'''
 def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float):
 
     column1 = 'time_rec_pos'
@@ -256,6 +256,9 @@ def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str,
     # Only rows with "target_addr = ICAO" 
     merged_data_total_2 = merged_data_total[merged_data_total['target_addr'] == merged_data_total['ICAO_y']]
     
+    # Only rows with "Roll Angle < 5" (data noise increase a lot with values > 5)
+    merged_data_total_2 = merged_data_total_2[abs(merged_data_total_2['RollAngle']) <= 5]
+    
     # Drop all rows in which needed info is Nan
     column_list = ['geom_height', 'GroundSpeed', 'TrueAirspeed', 'IndicatedAirspeed', 
                    'Mach', 'TrackAngle', 'GroundSpeed', 'MagneticHeading']
@@ -265,7 +268,71 @@ def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str,
 
     # Save merge
     merged_data_total_2.to_csv(output_file, sep='\t', index=False)
+'''  
+
+
+def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float):
     
+    column1 = 'time_rec_pos'
+    column2 = 'Timestamp'
+    column3 = 'Timestamp'
+    
+    df1 = pd.read_csv(fileCAT21, delimiter='\t', engine='python')
+    df2 = pd.read_csv(fileBDS50, delimiter='\t', engine='python')
+    
+    
+    # Drop all rows with Nan merge column
+    df1 = df1.dropna(subset=[column1])
+    df2 = df2.dropna(subset=[column2])
+    
+    
+    df1['time_column'] = pd.to_datetime(df1[column1], unit='s')
+    df2['time_column'] = pd.to_datetime(df2[column2], unit='s')
+    
+    df1 = df1.rename(columns={'target_addr': 'ICAO'})
+    #df2 = df2.rename(columns={'ICAO': 'nombre'})
+    
+    df1 = df1.sort_values('time_column')
+    df2 = df2.sort_values('time_column')
+    
+    df_merge = pd.merge_asof(df1, df2, on='time_column', by='ICAO', tolerance=pd.Timedelta(seconds=max_dev))
+    
+    # Drop all rows with Nan "Timestamp" column 
+    df_filtered = df_merge.dropna(subset=['Timestamp'])
+    
+    
+    
+    df3 = pd.read_csv(fileBDS60, delimiter='\t', engine='python')
+    
+    # Drop all rows with Nan merge column
+    df3 = df3.dropna(subset=[column3])
+    # Supongamos que tus dataframes son df1 y df2
+    df3['time_column'] = pd.to_datetime(df3['Timestamp'], unit='s')
+    
+    #df3 = df3.rename(columns={'ICAO': 'nombre'})
+    df3 = df3.sort_values('time_column')
+    
+    df_merge_2 = pd.merge_asof(df_filtered, df3, on='time_column', by='ICAO', tolerance=pd.Timedelta(seconds=max_dev))
+    
+    # Drop all rows with Nan "Timestamp_y" column 
+    df_filtered_2 = df_merge_2.dropna(subset=['Timestamp_y'])
+    
+    
+    # Only rows with "Roll Angle < 5" (data noise increase a lot with values > 5)
+    df_filtered_2 = df_filtered_2[abs(df_filtered_2['RollAngle']) <= 5]
+    
+    # Drop all rows in which needed info is Nan
+    column_list = ['geom_height', 'GroundSpeed', 'TrueAirspeed', 'IndicatedAirspeed', 
+                   'Mach', 'TrackAngle', 'GroundSpeed', 'MagneticHeading']
+    
+    for column in column_list: 
+        df_filtered_2 = df_filtered_2.dropna(subset=[column])
+    
+    # Drop "time_column" column
+    df_filtered_2.drop(columns=['time_column'], inplace=True)
+    
+    # Save merge
+    df_filtered_2.to_csv(output_file, sep='\t', index=False)
     
     
 ##############################################################################
@@ -285,7 +352,6 @@ def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     
     # Define the location for local store
-    # IMP: mount /Data disc before run
     mmg = Grid(local_store=local_meteo_grid)
     
     info = ['Timestamp', 'Latitude', 'Longitude', 'Altitude', 
@@ -366,26 +432,16 @@ def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
     # because computational efficiency reason)
     df_meteo = pd.DataFrame(lst, columns=info)
     
+    # Convert 'Timestamp' column to datetime format
+    df_meteo['Timestamp'] = pd.to_datetime(df_meteo['Timestamp'])
+    
+    # Drop nan rows
+    df_meteo = df_meteo.dropna()
+    
     # Save dataframe on txt
     df_meteo.to_csv(output_file, sep='\t', index=False)
     
     
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
