@@ -17,7 +17,7 @@ import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 
-VERSION = "0.0.3"
+VERSION = "0.1.0"
 CURR_PATH = "{}{}".format(path.abspath(path.dirname(__file__)), '/')
 
 long_description = (here / "README.md").read_text(encoding="utf-8")

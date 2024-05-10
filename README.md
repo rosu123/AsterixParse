@@ -24,7 +24,7 @@ Package developed by Rodrigo Perela Posada, student at EIF, Universidad Rey Juan
 
 To install package on virtual env:
 
-```pip install -i https://test.pypi.org/simple/ pyasterix```
+```pip install -i https://test.pypi.org/simple/ asterixparse```
 
 (temporary)
 
@@ -32,7 +32,7 @@ To install package on virtual env:
 ## Import
 
 
-```import pyasterix as ast```
+```import asterixparse as ast```
 
 > **_NOTE:_** On first import, a logging file is created on directory (`errors.log`). It will contain all the messages whose decoding has been erroneous.
 
