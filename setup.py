@@ -129,11 +129,10 @@ setup(
     #package_dir={"": "AsterixParse"},
     packages=find_packages(),
     python_requires=">=3.6, <4",
-    #project_urls={
-    #    "Bug Reports": "https://github.com/pypa/sampleproject/issues",
-    #    "Funding": "https://donate.pypi.org",
-    #    "Source": "https://github.com/pypa/sampleproject/",
-    #},
+    project_urls={
+        "Bug Reports": "https://github.com/rosu123/AsterixParse/issues",
+        "Source": "https://github.com/rosu123/AsterixParse",
+    },
     install_requires=['datetime', 'dataclasses',
                       'typing', 'pandas', 'jsonpickle', 
                       'pymongo', 'tqdm'],

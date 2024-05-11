@@ -206,70 +206,6 @@ def time_format(time):
 #####  Merge items CAT21 and BDS50 BDS60  #####
 ###############################################
 
-'''
-def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float):
-
-    column1 = 'time_rec_pos'
-    column2 = 'Timestamp'
-    column3 = 'Timestamp'
-    
-    data1 = pd.read_csv(fileCAT21, delimiter='\t', engine='python')
-    data2 = pd.read_csv(fileBDS50, delimiter='\t', engine='python')
-    
-    # Drop all rows with Nan merge column
-    data1 = data1.dropna(subset=[column1])
-    data2 = data2.dropna(subset=[column2])
-    
-    # Sort de df by merge column
-    data1 = data1.sort_values(column1)
-    data2 = data2.sort_values(column2)
-    
-    # Merge data CAT21 and BDS50
-    merged_data = pd.merge_asof(
-        data1, data2,
-        left_on=column1, right_on=column2,
-        direction='nearest', tolerance=max_dev
-    )
-    
-    # Only rows with "target_addr = ICAO" 
-    merged_data_2 = merged_data[merged_data['target_addr'] == merged_data['ICAO']]
-    
-    
-    data3 = pd.read_csv(fileBDS60, delimiter='\t', engine='python')
-    
-    # Drop all rows with Nan merge column
-    data3 = data3.dropna(subset=[column3])
-    
-    # Sort de df by merge column
-    data3 = data3.sort_values(column3)
-
-    # Merge previous merge and BDS60
-    merged_data_total = pd.merge_asof(
-        merged_data_2, data3,
-        left_on=column1, right_on=column3,
-        direction='nearest', tolerance=max_dev
-    )
-    
-    # Drop all rows with Nan "target_id" column 
-    merged_data_total = merged_data_total.dropna(subset=['target_id'])
-    
-    # Only rows with "target_addr = ICAO" 
-    merged_data_total_2 = merged_data_total[merged_data_total['target_addr'] == merged_data_total['ICAO_y']]
-    
-    # Only rows with "Roll Angle < 5" (data noise increase a lot with values > 5)
-    merged_data_total_2 = merged_data_total_2[abs(merged_data_total_2['RollAngle']) <= 5]
-    
-    # Drop all rows in which needed info is Nan
-    column_list = ['geom_height', 'GroundSpeed', 'TrueAirspeed', 'IndicatedAirspeed', 
-                   'Mach', 'TrackAngle', 'GroundSpeed', 'MagneticHeading']
-    
-    for column in column_list: 
-        merged_data_total_2 = merged_data_total_2.dropna(subset=[column])
-
-    # Save merge
-    merged_data_total_2.to_csv(output_file, sep='\t', index=False)
-'''  
-
 
 def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float):
     
@@ -333,7 +269,78 @@ def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str,
     
     # Save merge
     df_filtered_2.to_csv(output_file, sep='\t', index=False)
+
+
+
+
+'''
+#####
+# Procedure deprecated because "asof" bug merging data (maybe useful in the future)
+#
+
+def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str, max_dev: float):
+
+    column1 = 'time_rec_pos'
+    column2 = 'Timestamp'
+    column3 = 'Timestamp'
     
+    data1 = pd.read_csv(fileCAT21, delimiter='\t', engine='python')
+    data2 = pd.read_csv(fileBDS50, delimiter='\t', engine='python')
+    
+    # Drop all rows with Nan merge column
+    data1 = data1.dropna(subset=[column1])
+    data2 = data2.dropna(subset=[column2])
+    
+    # Sort de df by merge column
+    data1 = data1.sort_values(column1)
+    data2 = data2.sort_values(column2)
+    
+    # Merge data CAT21 and BDS50
+    merged_data = pd.merge_asof(
+        data1, data2,
+        left_on=column1, right_on=column2,
+        direction='nearest', tolerance=max_dev
+    )
+    
+    # Only rows with "target_addr = ICAO" 
+    merged_data_2 = merged_data[merged_data['target_addr'] == merged_data['ICAO']]
+    
+    
+    data3 = pd.read_csv(fileBDS60, delimiter='\t', engine='python')
+    
+    # Drop all rows with Nan merge column
+    data3 = data3.dropna(subset=[column3])
+    
+    # Sort de df by merge column
+    data3 = data3.sort_values(column3)
+
+    # Merge previous merge and BDS60
+    merged_data_total = pd.merge_asof(
+        merged_data_2, data3,
+        left_on=column1, right_on=column3,
+        direction='nearest', tolerance=max_dev
+    )
+    
+    # Drop all rows with Nan "target_id" column 
+    merged_data_total = merged_data_total.dropna(subset=['target_id'])
+    
+    # Only rows with "target_addr = ICAO" 
+    merged_data_total_2 = merged_data_total[merged_data_total['target_addr'] == merged_data_total['ICAO_y']]
+    
+    # Only rows with "Roll Angle < 5" (data noise increase a lot with values > 5)
+    merged_data_total_2 = merged_data_total_2[abs(merged_data_total_2['RollAngle']) <= 5]
+    
+    # Drop all rows in which needed info is Nan
+    column_list = ['geom_height', 'GroundSpeed', 'TrueAirspeed', 'IndicatedAirspeed', 
+                   'Mach', 'TrackAngle', 'GroundSpeed', 'MagneticHeading']
+    
+    for column in column_list: 
+        merged_data_total_2 = merged_data_total_2.dropna(subset=[column])
+
+    # Save merge
+    merged_data_total_2.to_csv(output_file, sep='\t', index=False)
+'''  
+
     
 ##############################################################################
 
@@ -342,6 +349,122 @@ def merge_data(fileCAT21: str, fileBDS50: str, fileBDS60: str, output_file: str,
 ###################################
 
 
+def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
+    
+    df = pd.read_csv(input_file, delimiter='\t')
+    
+    #print(df.head())
+    # Ignore "DeprecationWarning: parsing timezone aware datetimes is deprecated" warning
+    # It comes from mmg.interpolate(flight_1) call (fastmeteo package)
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    
+    # Define the location for local store
+    mmg = Grid(local_store=local_meteo_grid)
+    
+    info_pre = ['timestamp', 'latitude', 'longitude', 'altitude', 
+                'temperature_BDS', 'wind_u_BDS', 'wind_v_BDS']
+    
+    info = ['Timestamp', 'Latitude', 'Longitude', 'Altitude', 
+            'Temperature_BDS', 'Wind_u_BDS', 'Wind_v_BDS', 
+            'Temperature_ERA5', 'Wind_u_ERA5', 'Wind_v_ERA5']
+    
+    lst = []
+    num_rows = len(df)
+    #for msg in range(num_rows):
+    print("Calculating BDS meteorological data...")
+    for msg in tqdm(range(num_rows), desc="Progress", 
+                    unit=" messages"):
+    
+        #print(df.iloc[msg])
+        mach = df.loc[msg, 'Mach']
+        v_tas = df.loc[msg, 'TrueAirspeed']
+        heading = df.loc[msg, 'MagneticHeading']
+        v_gs = df.loc[msg, 'GroundSpeed']
+        track_angle = df.loc[msg, 'TrackAngle']
+        altitude_ft = df.loc[msg, 'geom_height']
+        v_ias = df.loc[msg, 'IndicatedAirspeed']
+        
+        temperature = calculate_temperature(mach, v_tas, altitude_ft, v_ias)
+        
+        v_tas_model = calculate_v_tas(mach, altitude_ft, v_ias, temperature)
+        wind_speed, wind_direction = calculate_wind_vector(v_tas_model, heading, v_gs, track_angle)
+        
+        # Meteorological Vw is opposite of aeronautical Vw (we shift the direction of the wind vector by 180 ° to obtain the wind direction)
+        #if wind_direction <= 180:
+        #    wind_direction += 180
+        #else:
+        #    wind_direction -= 180
+        
+        wind_speed_u, wind_speed_v = polar_to_cartesian(wind_speed, wind_direction) #knots
+        
+        # Convert to m/s (ERA5 format)
+        wind_speed_u, wind_speed_v = wind_speed_u * 0.5144444444, wind_speed_v * 0.5144444444 
+        
+        #print(f"\nBDS:   Temperature = {temperature} | Wind_speed_u = {wind_speed_u} | Wind_speed_v = {wind_speed_v}")
+        
+        time_era5 = time_format(df.loc[msg, 'time_rec_pos'])
+        latitude = df.loc[msg, 'latitude']
+        longitude = df.loc[msg, 'longitude']
+        
+        new_data = {
+            "timestamp": time_era5,
+            "latitude": latitude,
+            "longitude": longitude,
+            "altitude": altitude_ft,
+            "temperature_BDS": temperature,
+            "wind_u_BDS" : wind_speed_u,
+            "wind_v_BDS" : wind_speed_v
+        }
+        lst.append(new_data)
+   
+    df_meteo = pd.DataFrame(lst, columns=info_pre)
+    
+    
+    print("Getting ERA5 meteorological data...")
+    flight_new_1 = mmg.interpolate(df_meteo)
+    
+    lst_2 = []
+    num_rows = len(flight_new_1)
+    for msg in tqdm(range(num_rows), desc="Progress", 
+                    unit=" messages"):
+        
+        new_data = {
+            'Timestamp': flight_new_1.loc[msg, 'timestamp'],
+            'Latitude': flight_new_1.loc[msg, 'latitude'],
+            'Longitude': flight_new_1.loc[msg, 'longitude'],
+            'Altitude': flight_new_1.loc[msg, 'altitude'],
+            'Temperature_BDS': flight_new_1.loc[msg, 'temperature_BDS'],
+            'Wind_u_BDS': flight_new_1.loc[msg, 'wind_u_BDS'],
+            'Wind_v_BDS': flight_new_1.loc[msg, 'wind_v_BDS'],
+            'Temperature_ERA5': flight_new_1.loc[msg, 'temperature'],
+            'Wind_u_ERA5': flight_new_1.loc[msg, 'u_component_of_wind'],
+            'Wind_v_ERA5': flight_new_1.loc[msg, 'v_component_of_wind']
+        }
+        lst_2.append(new_data)
+    
+    df_meteo = pd.DataFrame(lst_2, columns=info)
+    
+    # Convert 'Timestamp' column to datetime format
+    df_meteo['Timestamp'] = pd.to_datetime(df_meteo['Timestamp'])
+    
+    # Drop nan rows
+    df_meteo = df_meteo.dropna()
+    
+    # Save dataframe on txt
+    df_meteo.to_csv(output_file, sep='\t', index=False)
+    
+    print("Data calculated successfully!")
+    
+    
+    
+
+'''
+#####
+# Procedure deprecated because efficiency problems with "mmg.interpolate" call.
+# Each call takes 1s to process (e.g: file with 150k lines - 42h to be processed). 
+# It is much (really much) more efficient to make a single call with all the meteo 
+# BDS calculations done previously (e.g: same file with 150k lines - 38s to be processed).
+#
 def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
     
     df = pd.read_csv(input_file, delimiter='\t')
@@ -440,8 +563,5 @@ def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
     
     # Save dataframe on txt
     df_meteo.to_csv(output_file, sep='\t', index=False)
-    
-    
-    
-
+'''   
 
