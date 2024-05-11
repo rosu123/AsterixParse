@@ -1151,6 +1151,7 @@ def calculate_meteo(input_file: str, output_file: str, local_meteo_grid: str):
     calculated with de CAT21 and BDS data, merged with the same ERA5 data obtained
     with "fastmeteo package" querying to official page 
     (https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
+    (https://pypi.org/project/fastmeteo/)
     
     Parameters
     ----------
