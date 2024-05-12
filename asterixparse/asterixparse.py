@@ -20,10 +20,10 @@ import jsonpickle
 from pymongo import MongoClient
 from tqdm import tqdm
 
-import classesASTERIX.classcategory21 as classcategory21
-import classesASTERIX.classcategory48 as classcategory48
-import classesASTERIX.classmodes as classmodes
-import classesASTERIX.meteotool as meteotool
+from .classesASTERIX import classcategory21
+from .classesASTERIX import classcategory48
+from .classesASTERIX import classmodes
+from .classesASTERIX import meteotool
 
 
 

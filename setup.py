@@ -17,7 +17,7 @@ import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 
-VERSION = "0.1.0"
+VERSION = "0.1.3"
 CURR_PATH = "{}{}".format(path.abspath(path.dirname(__file__)), '/')
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
@@ -133,7 +133,10 @@ setup(
         "Bug Reports": "https://github.com/rosu123/AsterixParse/issues",
         "Source": "https://github.com/rosu123/AsterixParse",
     },
-    install_requires=['datetime', 'dataclasses',
-                      'typing', 'pandas', 'jsonpickle', 
-                      'pymongo', 'tqdm'],
+    install_requires=[
+        'pandas>=2.1.4', 
+        'jsonpickle>=2.2.0', 
+        'pymongo>=3.12.0', 
+        'tqdm>=4.65.0', 
+        'fastmeteo>=0.1.1'],
 )

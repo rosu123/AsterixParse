@@ -8,4 +8,4 @@ Created on Mon Feb  5 13:56:42 2024
 
 from .asterixparse import *
 
-asterixparse.set_log()
+set_log()
