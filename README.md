@@ -24,14 +24,8 @@ Package developed by Rodrigo Perela Posada, student at EIF, Universidad Rey Juan
 
 To install package on virtual env:
 
-```python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple asterixparse```
 
-(temporary)
-
-
-```pip install asterixparse``` 
-
-(future)
+```pip install asterixparse```
 
 
 ## Import
